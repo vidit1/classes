@@ -3,9 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "node ./bin/www",
-    "docs": "jsdoc2md --separators routes/*.js > README.md; exit 0;",
-    "create_dirs": "mkdir logs csv pdfs static_files; exit 0;"
+    "start": "node app.js"
   },
   "dependencies": {
     "async": "1.2.1",
