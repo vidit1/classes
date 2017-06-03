@@ -4,7 +4,7 @@
 var mongoose = require('mongoose');
 mongoose.Promise = require('bluebird');
 
-mongoose.connect('mongodb://localhost:27017/vidit');
+mongoose.connect('mongodb://root:Hello1haha@ds163181.mlab.com:63181/heroku_kcgn0699');
 
 var Schema = mongoose.Schema;
 
