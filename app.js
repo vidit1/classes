@@ -18,6 +18,8 @@ var app     = express();
 // Globals
 ////////////////////////////////////////////////////////////////////////
 var socket                        = require('./routes/socket');
+var mongo                         = require('./routes/mongo');
+var classes                       = require('./routes/classes');
 
 
 app.use(morgan('dev'));
@@ -27,7 +29,12 @@ app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 //////////////////////////////////
 // set up the port number
 app.set('port', process.env.PORT || 8000);
+/////////////////////////////////
 
+////////////////////////////////
+// Api list to perform any action related to classes
+app.post('/create',         classes.createClass);
+///////////////////////////////
 
 
 
