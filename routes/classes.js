@@ -41,7 +41,7 @@ function createClass(req, res){
             let id = newClass._id.toString();
             yield  mongo.classes.update( {_id  : ObjectId(document.parent_id)}, {"$push": {"children": id}});
             let parent = yield mongo.classes.find({_id:document.parent_id });
-            socketIO.emit("update_class",parent);
+            socketIO.emit("update_class",parent[0]);
         }
         return newClass
     })().then((data)=> {
@@ -93,8 +93,7 @@ function deleteClass(req,res){
         if(classInfo.parent_id){
             yield mongo.classes.update({_id: classInfo.parent_id},{$pull : {children:id}});
             let parent = yield mongo.classes.find({_id:classInfo.parent_id });
-            socketIO.emit("update_class",parent);
-
+            socketIO.emit("update_class",parent[0]);
         }
         socketIO.emit("delete_class",id);
     })().then(()=> {
