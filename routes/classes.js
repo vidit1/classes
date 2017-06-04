@@ -2,14 +2,20 @@
 /**
  * Created by vidit on 3/6/17.
  */
-let utilities    = require('./utilities');
+
+let Promise      = require('bluebird');
+let ObjectId     = require('mongoose').Types.ObjectId;
 let mongo        = require('./mongo');
 var socketIO     = require('./socket');
+let utilities    = require('./utilities');
 
 exports.createClass = createClass;
+exports.getAll      = getAll;
+exports.deleteClass = deleteClass;
+
 
 function createClass(req, res){
-    let requiredFields = ["name"];
+    let requiredFields = ["name","properties"];
     if(!utilities.checkRequiredFields(req.body, requiredFields)){
         let response = {
             message : "Required Properties of classes missing"
@@ -17,30 +23,89 @@ function createClass(req, res){
         return res.send(response);
     }
     console.info("Request = ", JSON.stringify(req.body));
-    let body = req.body;
-    let document = {
-        name  : body.name,
-        parent_id : body.parent_id || null,
-        children : body.children || [],
-        properties : body
-    };
+    
+    Promise.coroutine(function *() {
+        let body = req.body;
+        let document = {
+            name  : body.name,
+            parent_id : body.parent_id || null,
+            children : body.children || [],
+            properties : body.properties
+        };
 
-    delete body.name;
-    delete body.parent_id;
-    delete body.children;
-    let classCollection = new  mongo.classes(document);
-    classCollection.save().then((data)=>{
+        let classCollection = new  mongo.classes(document);
+        let newClass = yield classCollection.save();
+        socketIO.emit("new_class",newClass);
+        newClass     = newClass._doc;
+        if(document.parent_id) {
+            let id = newClass._id.toString();
+            yield  mongo.classes.update( {_id  : ObjectId(document.parent_id)}, {"$push": {"children": id}});
+            let parent = yield mongo.classes.find({_id:document.parent_id });
+            socketIO.emit("update_class",parent);
+        }
+        return newClass
+    })().then((data)=> {
         let response = {
             message : "New Class created",
-            body    : data
+            class    : data
         };
-        socketIO.emit("new_class",data);
-        res.send(response)
-    },(error)=>{
 
+        res.send(response);
+    }, (error)=> {
         let response = {
-            message : error.message || "Error while creating new class"
+            error : error.message || "Error while creating new class"
         };
         res.send(response);
     });
+    
+}
+
+function getAll(req,res){
+    mongo.classes.find({}).then((result)=>{
+        let response = {
+            message :"All classes info",
+            list    : result
+        };
+        res.send(response)
+    },(error)=>{
+        let response = {
+            error : error.message || "Error while fetching all classes"
+        };
+        res.send(response);
+    })
+}
+
+function deleteClass(req,res){
+    if(!req.body.hasOwnProperty("_id")){
+        let response = {
+            message : "Class id missing"
+        };
+        return res.send(response);
+    }
+    Promise.coroutine(function *() {
+        let id = req.body._id;
+        let classInfo = yield mongo.classes.find({_id : id});
+        classInfo     = classInfo[0]._doc;
+        if(classInfo.children.length ){
+            throw new Error("Class with children cannot be deleted")
+        }
+        yield mongo.classes.findByIdAndRemove(id);
+        if(classInfo.parent_id){
+            yield mongo.classes.update({_id: classInfo.parent_id},{$pull : {children:id}});
+            let parent = yield mongo.classes.find({_id:classInfo.parent_id });
+            socketIO.emit("update_class",parent);
+
+        }
+        socketIO.emit("delete_class",id);
+    })().then(()=> {
+        let response = {
+            message :"Class successfully deleted"
+        };
+        res.send(response);
+    }, (error)=> {
+        let response = {
+            error : error.message || "Error while deleting class"
+        };
+        res.send(response);
+    })
 }

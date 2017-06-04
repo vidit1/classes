@@ -19,4 +19,8 @@ socketIo.on('connection', function (socket) {
     
 });
 
+socketIo.on("error",function (error) {
+    console.error(error);
+});
+
 module.exports = socketIo;

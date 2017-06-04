@@ -18,10 +18,12 @@ var app     = express();
 // Globals
 ////////////////////////////////////////////////////////////////////////
 var socket                        = require('./routes/socket');
-var mongo                         = require('./routes/mongo');
 var classes                       = require('./routes/classes');
 
-
+app.use(function(req, res, next) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    next();
+});
 app.use(morgan('dev'));
 app.use(bodyParser.json({limit: '100mb'}));
 app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
@@ -34,14 +36,11 @@ app.set('port', process.env.PORT || 8000);
 ////////////////////////////////
 // Api list to perform any action related to classes
 app.post('/create',         classes.createClass);
+app.post('/delete',         classes.deleteClass);
+app.get('/get_all',         classes.getAll);
 ///////////////////////////////
 
 
-
-app.use(function(req, res, next) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    next();
-});
 
 /**
  *  API to check if server is running or not
@@ -56,3 +55,4 @@ var httpServer = http.createServer(app).listen(app.get('port'), function () {
 });
 
 socket.attach(httpServer);
+socket.emit("new_class",{_id:123});
