@@ -12,6 +12,7 @@ let utilities    = require('./utilities');
 exports.createClass = createClass;
 exports.getAll      = getAll;
 exports.deleteClass = deleteClass;
+exports.updateClass = updateClass;
 
 
 function createClass(req, res){
@@ -104,6 +105,34 @@ function deleteClass(req,res){
     }, (error)=> {
         let response = {
             error : error.message || "Error while deleting class"
+        };
+        res.send(response);
+    })
+}
+
+function updateClass(req, res){
+    let requiredFields = ["id","properties"];
+    if(!utilities.checkRequiredFields(req.body, requiredFields)){
+        let response = {
+            error : "Required Properties of classes missing"
+        };
+        return res.send(response);
+    }
+
+    let id = req.body.id;
+    let properties = req.body.properties;
+    Promise.coroutine(function *() {
+        yield mongo.classes.update({_id : id},{$set : {properties:properties}});
+        let classInfo = yield mongo.classes.find({_id : id});
+        socketIO.emit("update_class",classInfo[0]._doc);
+    })().then(()=> {
+        let response = {
+            message :"Class successfully updated"
+        };
+        res.send(response);
+    }, (error)=> {
+        let response = {
+            error : error.message || "Error while updating class properties"
         };
         res.send(response);
     })

@@ -37,6 +37,7 @@ app.set('port', process.env.PORT || 8000);
 // Api list to perform any action related to classes
 app.post('/create',         classes.createClass);
 app.post('/delete',         classes.deleteClass);
+app.post('/update',         classes.updateClass);
 app.get('/get_all',         classes.getAll);
 ///////////////////////////////
 
